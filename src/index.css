@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
-html,
+html {
+  height: 100%;
+  color-scheme: light dark;
+}
+
 body,
 #root {
   height: 100%;
 }
 
 body {
+  margin: 0;
   font-family:
     system-ui,
     -apple-system,
@@ -16,4 +21,25 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes fundido {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animar-entrada {
+  animation: fundido 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animar-entrada {
+    animation: none;
+  }
 }
