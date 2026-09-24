@@ -1,29 +1,108 @@
 // Puente entre la interfaz (src/) y el backend de Tauri (src-tauri/).
-// Toda comunicación con Rust pasa por aquí usando invoke().
-// Los comandos listados son placeholders; se implementarán en pasos futuros.
+// Toda comunicación con Rust pasa por aquí usando invoke(). Los argumentos
+// snake_case de Rust se envían aquí en camelCase.
 
 import { invoke } from "@tauri-apps/api/core";
+import type { EntradaArbol, Perfil, Proyecto } from "../tipos/modelos";
 
 export async function ejecutarPython(codigo: string): Promise<string> {
   return invoke<string>("ejecutar_python", { codigo });
 }
 
-export function comprobarPythonInstalado(): Promise<string> {
-  return invoke<string>("comprobar_python_instalado");
+export function listarPerfiles(): Promise<Perfil[]> {
+  return invoke<Perfil[]>("listar_perfiles");
 }
 
-export function listarProyectos(): Promise<string[]> {
-  return invoke<string[]>("listar_proyectos");
+export function crearPerfil(nombre: string): Promise<Perfil> {
+  return invoke<Perfil>("crear_perfil", { nombre });
 }
 
-export function abrirProyecto(rutaProyecto: string): Promise<string> {
-  return invoke<string>("abrir_proyecto", { rutaProyecto });
+export function listarProyectos(perfilSlug: string): Promise<Proyecto[]> {
+  return invoke<Proyecto[]>("listar_proyectos", { perfilSlug });
 }
 
-export function guardarProyecto(proyecto: unknown): Promise<string> {
-  return invoke<string>("guardar_proyecto", { proyecto });
+export function crearProyecto(
+  perfilSlug: string,
+  nombre: string,
+): Promise<Proyecto> {
+  return invoke<Proyecto>("crear_proyecto", { perfilSlug, nombre });
 }
 
-export function instalarPaquetes(requisitos: string[]): Promise<string> {
-  return invoke<string>("instalar_paquetes", { requisitos });
+export function eliminarProyecto(
+  perfilSlug: string,
+  proyectoSlug: string,
+): Promise<void> {
+  return invoke<void>("eliminar_proyecto", { perfilSlug, proyectoSlug });
+}
+
+export function listarArchivos(
+  perfilSlug: string,
+  proyectoSlug: string,
+): Promise<EntradaArbol[]> {
+  return invoke<EntradaArbol[]>("listar_archivos", {
+    perfilSlug,
+    proyectoSlug,
+  });
+}
+
+export function leerArchivo(
+  perfilSlug: string,
+  proyectoSlug: string,
+  rutaRelativa: string,
+): Promise<string> {
+  return invoke<string>("leer_archivo", {
+    perfilSlug,
+    proyectoSlug,
+    rutaRelativa,
+  });
+}
+
+export function escribirArchivo(
+  perfilSlug: string,
+  proyectoSlug: string,
+  rutaRelativa: string,
+  contenido: string,
+): Promise<void> {
+  return invoke<void>("escribir_archivo", {
+    perfilSlug,
+    proyectoSlug,
+    rutaRelativa,
+    contenido,
+  });
+}
+
+export function crearArchivo(
+  perfilSlug: string,
+  proyectoSlug: string,
+  rutaRelativa: string,
+): Promise<void> {
+  return invoke<void>("crear_archivo", {
+    perfilSlug,
+    proyectoSlug,
+    rutaRelativa,
+  });
+}
+
+export function crearCarpeta(
+  perfilSlug: string,
+  proyectoSlug: string,
+  rutaRelativa: string,
+): Promise<void> {
+  return invoke<void>("crear_carpeta", {
+    perfilSlug,
+    proyectoSlug,
+    rutaRelativa,
+  });
+}
+
+export function eliminarEntrada(
+  perfilSlug: string,
+  proyectoSlug: string,
+  rutaRelativa: string,
+): Promise<void> {
+  return invoke<void>("eliminar_entrada", {
+    perfilSlug,
+    proyectoSlug,
+    rutaRelativa,
+  });
 }
