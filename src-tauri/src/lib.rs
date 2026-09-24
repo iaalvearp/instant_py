@@ -1,4 +1,5 @@
 mod modelos;
+mod preferencias;
 mod proyectos;
 mod seguridad;
 mod slug;
@@ -171,6 +172,8 @@ pub fn run() {
             greet,
             ejecutar_python,
             detener_ejecucion,
+            preferencias::obtener_preferencias,
+            preferencias::guardar_preferencias,
             proyectos::listar_perfiles,
             proyectos::crear_perfil,
             proyectos::listar_proyectos,
