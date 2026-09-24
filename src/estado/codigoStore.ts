@@ -5,6 +5,7 @@ interface CodigoStore {
   salida: string;
   estableceCodigo: (codigo: string) => void;
   estableceSalida: (salida: string) => void;
+  agregaSalida: (texto: string) => void;
 }
 
 export const useCodigoStore = create<CodigoStore>((set) => ({
@@ -12,4 +13,5 @@ export const useCodigoStore = create<CodigoStore>((set) => ({
   salida: "",
   estableceCodigo: (codigo) => set({ codigo }),
   estableceSalida: (salida) => set({ salida }),
+  agregaSalida: (texto) => set((estado) => ({ salida: estado.salida + texto })),
 }));

@@ -3,7 +3,13 @@
 // snake_case de Rust se envían aquí en camelCase.
 
 import { invoke } from "@tauri-apps/api/core";
-import type { EntradaArbol, Perfil, Proyecto, ResultadoEjecucion } from "../tipos/modelos";
+import type {
+  EntradaArbol,
+  Perfil,
+  Preferencias,
+  Proyecto,
+  ResultadoEjecucion,
+} from "../tipos/modelos";
 
 export function ejecutarPython(codigo: string): Promise<ResultadoEjecucion> {
   return invoke<ResultadoEjecucion>("ejecutar_python", { codigo });
@@ -11,6 +17,16 @@ export function ejecutarPython(codigo: string): Promise<ResultadoEjecucion> {
 
 export function detenerEjecucion(): Promise<void> {
   return invoke<void>("detener_ejecucion");
+}
+
+export function obtenerPreferencias(): Promise<Preferencias> {
+  return invoke<Preferencias>("obtener_preferencias");
+}
+
+export function guardarPreferencias(
+  preferencias: Preferencias,
+): Promise<Preferencias> {
+  return invoke<Preferencias>("guardar_preferencias", { preferencias });
 }
 
 export function listarPerfiles(): Promise<Perfil[]> {

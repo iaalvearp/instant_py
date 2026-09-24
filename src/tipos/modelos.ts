@@ -29,3 +29,7 @@ export interface ResultadoEjecucion {
   tiempoExcedido: boolean;
   detenido: boolean;
 }
+
+export interface Preferencias {
+  ejecucionAutomatica: boolean;
+}

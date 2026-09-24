@@ -15,17 +15,18 @@ import BarraEstado, { type EstadoGuardado } from "../componentes/BarraEstado";
 import BarraTareas from "../componentes/BarraTareas";
 import Boton from "../componentes/Boton";
 import EditorPython from "../componentes/EditorPython";
+import IndicadorEjecucion from "../componentes/IndicadorEjecucion";
+import Interruptor from "../componentes/Interruptor";
 import PanelSalida from "../componentes/PanelSalida";
 import { useAppStore } from "../estado/appStore";
 import { useCodigoStore } from "../estado/codigoStore";
-import { ejecutarPython, detenerEjecucion, leerArchivo, escribirArchivo } from "../puente/tauriBridge";
+import { usarEjecucion } from "../estado/usarEjecucion";
+import { leerArchivo, escribirArchivo } from "../puente/tauriBridge";
 
 const TIEMPO_AUTOGUARDADO_MS = 500;
-const MENSAJE_TIMEOUT =
-  "⏱ El código tardó más de 15 segundos y fue detenido. Revisa si tienes un bucle infinito.";
 
 export default function Editor() {
-  const { codigo, salida, estableceCodigo, estableceSalida } = useCodigoStore();
+  const { codigo, salida, estableceCodigo } = useCodigoStore();
   const {
     perfilActivo,
     proyectoActivo,
@@ -33,9 +34,17 @@ export default function Editor() {
     archivoActivo,
     estaEjecutando,
     estableceArchivoActivo,
-    estableceEjecutando,
     establecePantallaActual,
   } = useAppStore();
+  const {
+    automatica,
+    indicador,
+    alternarAutomatica,
+    armarParaEdicion,
+    ejecutarManualmente,
+    detener,
+    reiniciarUltimaEjecucion,
+  } = usarEjecucion();
   const [arbolAbierto, setArbolAbierto] = useState(true);
   const [linea, setLinea] = useState(1);
   const [columna, setColumna] = useState(1);
@@ -45,6 +54,9 @@ export default function Editor() {
   const codigoRef = useRef(codigo);
   const archivoRef = useRef(archivoActivo);
   const contenidoGuardadoRef = useRef(codigo);
+  // Contenido con el que se cargó el archivo actual: los cambios programáticos
+  // de Monaco (abrir archivo) no deben programar la auto-ejecución.
+  const codigoCargadoRef = useRef<string | null>(null);
   codigoRef.current = codigo;
   archivoRef.current = archivoActivo;
 
@@ -72,14 +84,22 @@ export default function Editor() {
       try {
         const contenido = await leerArchivo(perfilActivo, proyectoActivo, ruta);
         contenidoGuardadoRef.current = contenido;
+        codigoCargadoRef.current = contenido;
         estableceArchivoActivo(ruta);
         estableceCodigo(contenido);
+        reiniciarUltimaEjecucion();
         setEstadoGuardado(null);
       } catch {
         setEstadoGuardado("error");
       }
     },
-    [perfilActivo, proyectoActivo, estableceArchivoActivo, estableceCodigo],
+    [
+      perfilActivo,
+      proyectoActivo,
+      estableceArchivoActivo,
+      estableceCodigo,
+      reiniciarUltimaEjecucion,
+    ],
   );
 
   // Al abrir un archivo guardamos primero el archivo actual si hay cambios.
@@ -131,33 +151,22 @@ export default function Editor() {
     };
   }, [perfilActivo, proyectoActivo]);
 
-  async function ejecutar() {
-    if (estaEjecutando) {
-      await detenerEjecucion();
+  // Cambio real en el editor: se guarda en el store y se programa la
+  // auto-ejecución si no es la carga programática de un archivo.
+  function alCambiarCodigo(nuevo: string) {
+    estableceCodigo(nuevo);
+    if (codigoCargadoRef.current !== null && nuevo === codigoCargadoRef.current) {
       return;
     }
-    estableceSalida("");
-    estableceEjecutando(true);
-    try {
-      const resultado = await ejecutarPython(codigo);
-      if (resultado.tiempoExcedido) {
-        estableceSalida(MENSAJE_TIMEOUT);
-      } else if (resultado.detenido) {
-        estableceSalida("Ejecución detenida.");
-      } else {
-        estableceSalida(resultado.salida);
-      }
-    } catch (error) {
-      estableceSalida(String(error));
-    } finally {
-      estableceEjecutando(false);
-    }
+    armarParaEdicion(nuevo);
   }
 
   function alEntradaEliminada(ruta: string) {
     if (ruta === archivoRef.current) {
+      codigoCargadoRef.current = null;
       estableceArchivoActivo(null);
       estableceCodigo("");
+      reiniciarUltimaEjecucion();
       contenidoGuardadoRef.current = "";
       setEstadoGuardado(null);
     }
@@ -172,6 +181,16 @@ export default function Editor() {
             <span className="truncate font-medium">
               {proyectoActivoNombre ?? "Proyecto"}
             </span>
+            <span
+              className="h-4 w-px shrink-0 bg-zinc-200 dark:bg-zinc-800"
+              aria-hidden="true"
+            />
+            <IndicadorEjecucion indicador={indicador} />
+            <Interruptor
+              activo={automatica}
+              etiqueta="Ejecución automática"
+              onCambio={alternarAutomatica}
+            />
           </>
         }
         derecha={
@@ -192,7 +211,7 @@ export default function Editor() {
             </Boton>
             <Boton
               variante="primaria"
-              onClick={ejecutar}
+              onClick={() => (estaEjecutando ? detener() : ejecutarManualmente(codigo))}
             >
               {estaEjecutando ? (
                 <Square className="h-4 w-4" aria-hidden="true" />
@@ -228,7 +247,7 @@ export default function Editor() {
         <section className="min-w-0 flex-1" aria-label="Editor de código">
           <EditorPython
             codigo={codigo}
-            onCambio={estableceCodigo}
+            onCambio={alCambiarCodigo}
             alCambiarCursor={(nuevaLinea, nuevaColumna) => {
               setLinea(nuevaLinea);
               setColumna(nuevaColumna);
