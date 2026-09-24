@@ -18,9 +18,11 @@ import EditorPython from "../componentes/EditorPython";
 import PanelSalida from "../componentes/PanelSalida";
 import { useAppStore } from "../estado/appStore";
 import { useCodigoStore } from "../estado/codigoStore";
-import { ejecutarPython, leerArchivo, escribirArchivo } from "../puente/tauriBridge";
+import { ejecutarPython, detenerEjecucion, leerArchivo, escribirArchivo } from "../puente/tauriBridge";
 
 const TIEMPO_AUTOGUARDADO_MS = 500;
+const MENSAJE_TIMEOUT =
+  "⏱ El código tardó más de 15 segundos y fue detenido. Revisa si tienes un bucle infinito.";
 
 export default function Editor() {
   const { codigo, salida, estableceCodigo, estableceSalida } = useCodigoStore();
@@ -130,11 +132,21 @@ export default function Editor() {
   }, [perfilActivo, proyectoActivo]);
 
   async function ejecutar() {
+    if (estaEjecutando) {
+      await detenerEjecucion();
+      return;
+    }
     estableceSalida("");
     estableceEjecutando(true);
     try {
       const resultado = await ejecutarPython(codigo);
-      estableceSalida(resultado);
+      if (resultado.tiempoExcedido) {
+        estableceSalida(MENSAJE_TIMEOUT);
+      } else if (resultado.detenido) {
+        estableceSalida("Ejecución detenida.");
+      } else {
+        estableceSalida(resultado.salida);
+      }
     } catch (error) {
       estableceSalida(String(error));
     } finally {
@@ -181,14 +193,13 @@ export default function Editor() {
             <Boton
               variante="primaria"
               onClick={ejecutar}
-              disabled={estaEjecutando}
             >
               {estaEjecutando ? (
                 <Square className="h-4 w-4" aria-hidden="true" />
               ) : (
                 <Play className="h-4 w-4" aria-hidden="true" />
               )}
-              {estaEjecutando ? "Ejecutando…" : "Ejecutar"}
+              {estaEjecutando ? "Detener" : "Ejecutar"}
             </Boton>
           </>
         }

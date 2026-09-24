@@ -3,18 +3,49 @@ mod proyectos;
 mod seguridad;
 mod slug;
 
+use std::process::Stdio;
+use std::sync::Arc;
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
+use tokio::process::Command;
+
+// Resultado de una ejecución, con salida (stdout/stderr) y cómo terminó.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ResultadoEjecucion {
+    salida: String,
+    codigo_salida: Option<i32>,
+    tiempo_excedido: bool,
+    detenido: bool,
+}
+
+// Estado compartido para cancelar la ejecución en curso.
+// Cada ejecución guarda aquí un canal de cancelación; la siguiente ejecución
+// reemplaza el canal, lo que cancela (detiene) la anterior.
+#[derive(Default)]
+struct Ejecutor {
+    cancelador: tokio::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+}
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
 #[tauri::command]
-async fn ejecutar_python(codigo: String) -> Result<String, String> {
-    use std::process::Stdio;
-    use tokio::io::AsyncReadExt;
-    use tokio::io::AsyncWriteExt;
-    use tokio::process::Command;
-    use tokio::time::{timeout, Duration};
+async fn ejecutar_python(
+    codigo: String,
+    estado: tauri::State<'_, Ejecutor>,
+) -> Result<ResultadoEjecucion, String> {
+    use tokio::time::{sleep, Duration};
+
+    // Cancela la ejecución previa (si existe) y crea el nuevo token de cancelación.
+    let receptor = {
+        let (enviador, receptor) = tokio::sync::oneshot::channel();
+        let mut cancelador = estado.cancelador.lock().await;
+        *cancelador = Some(enviador);
+        receptor
+    };
 
     let mut hijo = Command::new(sistema_python())
         .arg("-")
@@ -42,14 +73,14 @@ async fn ejecutar_python(codigo: String) -> Result<String, String> {
         texto
     });
 
-    let plazo = Duration::from_secs(15);
-    let salida = match timeout(plazo, async {
-        let _ = escribir_stdin.await;
-        (leer_stdout.await, leer_stderr.await)
-    })
-    .await
-    {
-        Ok((stdout, stderr)) => {
+    let hijo = Arc::new(tokio::sync::Mutex::new(hijo));
+
+    // Ramificación: la ejecución terminó sola (salida leída + proceso esperado).
+    let completado = {
+        let hijo = Arc::clone(&hijo);
+        async move {
+            let _ = escribir_stdin.await;
+            let (stdout, stderr) = tokio::join!(leer_stdout, leer_stderr);
             let mut texto = stdout.map_err(|e| format!("Error interno al leer salida: {e}"))?;
             let texto_stderr =
                 stderr.map_err(|e| format!("Error interno al leer errores: {e}"))?;
@@ -59,15 +90,68 @@ async fn ejecutar_python(codigo: String) -> Result<String, String> {
                 }
                 texto.push_str(&texto_stderr);
             }
-            Ok(texto)
-        }
-        Err(_) => {
-            let _ = hijo.kill().await;
-            Err("Tiempo de ejecución superado (máx. 15 s).".to_string())
+            let codigo = hijo
+                .lock()
+                .await
+                .wait()
+                .await
+                .map_err(|e| format!("Error al esperar a Python: {e}"))?
+                .code();
+            Ok::<ResultadoEjecucion, String>(ResultadoEjecucion {
+                salida: texto,
+                codigo_salida: codigo,
+                tiempo_excedido: false,
+                detenido: false,
+            })
         }
     };
 
-    salida
+    // Paras y recoges el proceso para no dejar procesos huérfanos.
+    let cancelado = {
+        let hijo = Arc::clone(&hijo);
+        async move {
+            let mut hijo = hijo.lock().await;
+            let _ = hijo.kill().await;
+            let _ = hijo.wait().await;
+            ResultadoEjecucion {
+                salida: String::new(),
+                codigo_salida: None,
+                tiempo_excedido: false,
+                detenido: true,
+            }
+        }
+    };
+
+    let vencido = {
+        let hijo = Arc::clone(&hijo);
+        async move {
+            let mut hijo = hijo.lock().await;
+            let _ = hijo.kill().await;
+            let _ = hijo.wait().await;
+            ResultadoEjecucion {
+                salida: String::new(),
+                codigo_salida: None,
+                tiempo_excedido: true,
+                detenido: false,
+            }
+        }
+    };
+
+    let mut receptor_cancelacion = receptor;
+    tokio::select! {
+        _ = &mut receptor_cancelacion => Ok(cancelado.await),
+        resultado = completado => resultado,
+        _ = sleep(Duration::from_secs(15)) => Ok(vencido.await),
+    }
+}
+
+#[tauri::command]
+async fn detener_ejecucion(estado: tauri::State<'_, Ejecutor>) -> Result<(), String> {
+    let mut cancelador = estado.cancelador.lock().await;
+    if let Some(enviador) = cancelador.take() {
+        let _ = enviador.send(());
+    }
+    Ok(())
 }
 
 fn sistema_python() -> &'static str {
@@ -82,9 +166,11 @@ fn sistema_python() -> &'static str {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(Ejecutor::default())
         .invoke_handler(tauri::generate_handler![
             greet,
             ejecutar_python,
+            detener_ejecucion,
             proyectos::listar_perfiles,
             proyectos::crear_perfil,
             proyectos::listar_proyectos,

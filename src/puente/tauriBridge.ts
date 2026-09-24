@@ -3,10 +3,14 @@
 // snake_case de Rust se envían aquí en camelCase.
 
 import { invoke } from "@tauri-apps/api/core";
-import type { EntradaArbol, Perfil, Proyecto } from "../tipos/modelos";
+import type { EntradaArbol, Perfil, Proyecto, ResultadoEjecucion } from "../tipos/modelos";
 
-export async function ejecutarPython(codigo: string): Promise<string> {
-  return invoke<string>("ejecutar_python", { codigo });
+export function ejecutarPython(codigo: string): Promise<ResultadoEjecucion> {
+  return invoke<ResultadoEjecucion>("ejecutar_python", { codigo });
+}
+
+export function detenerEjecucion(): Promise<void> {
+  return invoke<void>("detener_ejecucion");
 }
 
 export function listarPerfiles(): Promise<Perfil[]> {

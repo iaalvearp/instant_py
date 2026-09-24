@@ -22,3 +22,10 @@ export interface EntradaArbol {
   esCarpeta: boolean;
   hijos: EntradaArbol[];
 }
+
+export interface ResultadoEjecucion {
+  salida: string;
+  codigoSalida: number | null;
+  tiempoExcedido: boolean;
+  detenido: boolean;
+}
