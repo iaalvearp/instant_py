@@ -1,3 +1,8 @@
+mod modelos;
+mod proyectos;
+mod seguridad;
+mod slug;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -77,7 +82,21 @@ fn sistema_python() -> &'static str {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, ejecutar_python])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            ejecutar_python,
+            proyectos::listar_perfiles,
+            proyectos::crear_perfil,
+            proyectos::listar_proyectos,
+            proyectos::crear_proyecto,
+            proyectos::eliminar_proyecto,
+            proyectos::listar_archivos,
+            proyectos::leer_archivo,
+            proyectos::escribir_archivo,
+            proyectos::crear_archivo,
+            proyectos::crear_carpeta,
+            proyectos::eliminar_entrada,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
