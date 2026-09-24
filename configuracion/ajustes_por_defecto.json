@@ -1,0 +1,9 @@
+{
+  "tema": "oscuro",
+  "tamanoFuenteEditor": 14,
+  "minimapaVisible": false,
+  "tiempoMaximoEjecucionSegundos": 15,
+  "lenguajePorDefecto": "python",
+  "directorioProyectos": null,
+  "plantillaCodigoInicial": "print(\"Hola desde instant_py\")"
+}
