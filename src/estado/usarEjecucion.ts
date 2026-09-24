@@ -16,15 +16,9 @@ const DEBOUNCE_AUTO_MS = 2000;
 const MENSAJE_TIMEOUT =
   "⏱ El código tardó más de 15 segundos y fue detenido. Revisa si tienes un bucle infinito.";
 
-function horaActual(): string {
-  const ahora = new Date();
-  const dosCifras = (valor: number) => String(valor).padStart(2, "0");
-  return `${dosCifras(ahora.getHours())}:${dosCifras(ahora.getMinutes())}:${dosCifras(ahora.getSeconds())}`;
-}
-
 export function usarEjecucion() {
   const estableceEjecutando = useAppStore((estado) => estado.estableceEjecutando);
-  const agregaSalida = useCodigoStore((estado) => estado.agregaSalida);
+  const estableceSalida = useCodigoStore((estado) => estado.estableceSalida);
   const { automatica, indicador, estableceAutomatica, estableceIndicador } =
     useEjecucionStore();
 
@@ -50,31 +44,27 @@ export function usarEjecucion() {
     const id = ++corridaIdRef.current;
     estableceEjecutando(true);
     estableceIndicador("corriendo");
-    const separador = `──── ${horaActual()} ────\n`;
     try {
       const resultado = await ejecutarPython(codigo);
       if (id !== corridaIdRef.current) return;
       if (resultado.detenido) {
         autoSuprimidaRef.current = true;
-        agregaSalida(`${separador}Ejecución detenida.\n`);
+        estableceSalida("Ejecución detenida.");
         estableceIndicador("error");
         programarIndicadorInactivo(2000);
       } else if (resultado.tiempoExcedido) {
-        agregaSalida(`${separador}${MENSAJE_TIMEOUT}\n`);
+        estableceSalida(MENSAJE_TIMEOUT);
         estableceIndicador("error");
         programarIndicadorInactivo(2000);
       } else {
-        const salida = resultado.salida;
-        const conSalto =
-          salida.length > 0 && !salida.endsWith("\n") ? `${salida}\n` : salida;
-        agregaSalida(`${separador}${conSalto}`);
+        estableceSalida(resultado.salida);
         const correcto = resultado.codigoSalida === 0;
         estableceIndicador(correcto ? "exito" : "error");
         programarIndicadorInactivo(correcto ? 1000 : 2000);
       }
     } catch (error) {
       if (id !== corridaIdRef.current) return;
-      agregaSalida(`${separador}${String(error)}\n`);
+      estableceSalida(String(error));
       estableceIndicador("error");
       programarIndicadorInactivo(2000);
     } finally {
