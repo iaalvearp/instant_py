@@ -2,15 +2,25 @@ import Editor from "@monaco-editor/react";
 import { Play, Square } from "lucide-react";
 import clsx from "clsx";
 import "./monaco";
-import { useCodigoStore } from "./stores/codigoStore";
+import { useCodigoStore } from "./estado/codigoStore";
+import { useAppStore } from "./estado/appStore";
+import { ejecutarPython } from "./puente/tauriBridge";
 
 function App() {
   const { codigo, salida, estableceCodigo, estableceSalida } = useCodigoStore();
-  const ejecutando = false;
+  const { estaEjecutando, estableceEjecutando } = useAppStore();
 
   async function ejecutar() {
-    // TODO(backend): ejecutar el código Python y volcar stdout en la salida
     estableceSalida("");
+    estableceEjecutando(true);
+    try {
+      const resultado = await ejecutarPython(codigo);
+      estableceSalida(resultado);
+    } catch (error) {
+      estableceSalida(String(error));
+    } finally {
+      estableceEjecutando(false);
+    }
   }
 
   return (
@@ -25,19 +35,20 @@ function App() {
         </div>
         <button
           onClick={ejecutar}
+          disabled={estaEjecutando}
           className={clsx(
-            "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-            ejecutando
+            "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed",
+            estaEjecutando
               ? "bg-zinc-800 text-zinc-400"
               : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400",
           )}
         >
-          {ejecutando ? (
+          {estaEjecutando ? (
             <Square className="h-4 w-4" />
           ) : (
             <Play className="h-4 w-4" />
           )}
-          {ejecutando ? "Ejecutando…" : "Ejecutar"}
+          {estaEjecutando ? "Ejecutando…" : "Ejecutar"}
         </button>
       </header>
 
