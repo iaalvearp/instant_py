@@ -4,10 +4,11 @@ import { ArrowLeft } from "lucide-react";
 import BarraTareas from "../componentes/BarraTareas";
 import Boton from "../componentes/Boton";
 import { useAppStore } from "../estado/appStore";
+import { log } from "../utilidades/diagnostico";
 
 export default function Ajustes() {
   // TODO: quitar después del diagnóstico
-  console.log("[PANTALLA] Ajustes render");
+  log("[PANTALLA] Ajustes render");
 
   const {
     perfilActivo,
@@ -17,8 +18,8 @@ export default function Ajustes() {
 
   // TODO: quitar después del diagnóstico
   useEffect(() => {
-    console.log("[PANTALLA] Ajustes montado");
-    return () => console.log("[PANTALLA] Ajustes desmontado");
+    log("[PANTALLA] Ajustes montado");
+    return () => log("[PANTALLA] Ajustes desmontado");
   }, []);
 
   function volver() {
@@ -32,7 +33,11 @@ export default function Ajustes() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    // TODO: quitar bordes de debug
+    <div
+      className="flex h-screen flex-col"
+      style={{ outline: "2px dashed lime", minHeight: "200px" }}
+    >
       <BarraTareas
         izquierda={<h1 className="text-base font-semibold">Ajustes</h1>}
         derecha={

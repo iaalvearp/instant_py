@@ -23,10 +23,11 @@ import {
 } from "../puente/tauriBridge";
 import type { Proyecto } from "../tipos/modelos";
 import { fechaRelativa } from "../utilidades/formato";
+import { log } from "../utilidades/diagnostico";
 
 export default function Proyectos() {
   // TODO: quitar después del diagnóstico
-  console.log("[PANTALLA] Proyectos render");
+  log("[PANTALLA] Proyectos render");
 
   const perfilActivo = useAppStore((s) => s.perfilActivo);
   const perfilActivoNombre = useAppStore((s) => s.perfilActivoNombre);
@@ -47,8 +48,8 @@ export default function Proyectos() {
 
   // TODO: quitar después del diagnóstico
   useEffect(() => {
-    console.log("[PANTALLA] Proyectos montado");
-    return () => console.log("[PANTALLA] Proyectos desmontado");
+    log("[PANTALLA] Proyectos montado");
+    return () => log("[PANTALLA] Proyectos desmontado");
   }, []);
 
   const refrescaProyectos = useCallback(async () => {
@@ -90,7 +91,11 @@ export default function Proyectos() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    // TODO: quitar bordes de debug
+    <div
+      className="flex h-screen flex-col"
+      style={{ outline: "2px dashed lime", minHeight: "200px" }}
+    >
       <BarraTareas
         izquierda={
           <>

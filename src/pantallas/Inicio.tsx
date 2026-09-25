@@ -8,10 +8,11 @@ import { useAppStore } from "../estado/appStore";
 import { crearPerfil, listarPerfiles } from "../puente/tauriBridge";
 import type { Perfil } from "../tipos/modelos";
 import { iniciales } from "../utilidades/formato";
+import { log, logError } from "../utilidades/diagnostico";
 
 export default function Inicio() {
   // TODO: quitar después del diagnóstico
-  console.log("[PANTALLA] Inicio render");
+  log("[PANTALLA] Inicio render");
 
   const establecePerfilActivo = useAppStore((s) => s.establecePerfilActivo);
   const establecePerfilActivoNombre = useAppStore(
@@ -25,21 +26,21 @@ export default function Inicio() {
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
 
   // TODO: quitar después del diagnóstico
-  console.log("[INICIO] cargando:", cargando);
+  log("[INICIO] cargando:", cargando);
 
   async function refrescaPerfiles() {
     // TODO: quitar después del diagnóstico
-    console.log("[INICIO] cargando perfiles…");
+    log("[INICIO] cargando perfiles…");
     setCargando(true);
     setError(null);
     try {
       const leidos = await listarPerfiles();
       // TODO: quitar después del diagnóstico
-      console.log("[INICIO] perfiles cargados:", leidos.length);
+      log("[INICIO] perfiles cargados:", leidos.length);
       setPerfiles(leidos);
     } catch (e) {
       // TODO: quitar después del diagnóstico
-      console.error("[INICIO] error al cargar:", e);
+      logError("[INICIO] error al cargar:", e);
       setError(String(e));
     } finally {
       setCargando(false);
@@ -52,8 +53,8 @@ export default function Inicio() {
 
   // TODO: quitar después del diagnóstico
   useEffect(() => {
-    console.log("[PANTALLA] Inicio montado");
-    return () => console.log("[PANTALLA] Inicio desmontado");
+    log("[PANTALLA] Inicio montado");
+    return () => log("[PANTALLA] Inicio desmontado");
   }, []);
 
   async function creaPerfil(nombre: string) {
@@ -71,7 +72,11 @@ export default function Inicio() {
   }
 
   return (
-    <main className="flex min-h-full flex-col items-center justify-center gap-10 px-6 py-16">
+    // TODO: quitar bordes de debug
+    <main
+      className="flex min-h-full flex-col items-center justify-center gap-10 px-6 py-16"
+      style={{ outline: "2px dashed lime", minHeight: "200px" }}
+    >
       <div className="text-center">
         <h1 className="text-5xl font-bold tracking-tight">instant_py</h1>
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">

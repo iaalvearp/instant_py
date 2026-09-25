@@ -38,6 +38,17 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// TODO: quitar tras diagnóstico: vuelca los logs del frontend en la terminal
+// donde corre `pnpm tauri dev`.
+#[tauri::command]
+fn log_al_terminal(nivel: String, mensaje: String) {
+    match nivel.as_str() {
+        "error" => eprintln!("[FRONTEND ERROR] {}", mensaje),
+        "warn" => eprintln!("[FRONTEND WARN]  {}", mensaje),
+        _ => println!("[FRONTEND LOG]   {}", mensaje),
+    }
+}
+
 #[tauri::command]
 async fn ejecutar_python(
     codigo: String,
@@ -181,6 +192,7 @@ pub fn run() {
         .manage(Ejecutor::default())
         .invoke_handler(tauri::generate_handler![
             greet,
+            log_al_terminal,
             ejecutar_python,
             detener_ejecucion,
             paquetes::inicializar_venv_compartido,

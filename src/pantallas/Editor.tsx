@@ -32,12 +32,13 @@ import {
   sincronizarRequirements,
 } from "../puente/tauriBridge";
 import { nombreBaseDeRequisito } from "../utilidades/paquetes";
+import { log } from "../utilidades/diagnostico";
 
 const TIEMPO_AUTOGUARDADO_MS = 500;
 
 export default function Editor() {
   // TODO: quitar después del diagnóstico
-  console.log("[PANTALLA] Editor render");
+  log("[PANTALLA] Editor render");
 
   const { codigo, salida, estableceCodigo } = useCodigoStore();
   const {
@@ -68,8 +69,8 @@ export default function Editor() {
 
   // TODO: quitar después del diagnóstico
   useEffect(() => {
-    console.log("[PANTALLA] Editor montado");
-    return () => console.log("[PANTALLA] Editor desmontado");
+    log("[PANTALLA] Editor montado");
+    return () => log("[PANTALLA] Editor desmontado");
   }, []);
 
   // Refs con el valor vivo para poder guardar desde fuera del render.
@@ -228,7 +229,11 @@ export default function Editor() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    // TODO: quitar bordes de debug
+    <div
+      className="flex h-screen flex-col"
+      style={{ outline: "2px dashed lime", minHeight: "200px" }}
+    >
       <BarraTareas
         izquierda={
           <>
