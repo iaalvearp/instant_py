@@ -1,15 +1,25 @@
 // Pantalla de ajustes. Placeholder: llegará con la configuración real.
+import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import BarraTareas from "../componentes/BarraTareas";
 import Boton from "../componentes/Boton";
 import { useAppStore } from "../estado/appStore";
 
 export default function Ajustes() {
+  // TODO: quitar después del diagnóstico
+  console.log("[PANTALLA] Ajustes render");
+
   const {
     perfilActivo,
     proyectoActivo,
     establecePantallaActual,
   } = useAppStore();
+
+  // TODO: quitar después del diagnóstico
+  useEffect(() => {
+    console.log("[PANTALLA] Ajustes montado");
+    return () => console.log("[PANTALLA] Ajustes desmontado");
+  }, []);
 
   function volver() {
     if (proyectoActivo) {

@@ -1,6 +1,8 @@
 // Puente entre la interfaz (src/) y el backend de Tauri (src-tauri/).
 // Toda comunicación con Rust pasa por aquí usando invoke(). Los argumentos
 // snake_case de Rust se envían aquí en camelCase.
+//
+// TODO: quitar después del diagnóstico: cada llamada se loguea en consola.
 
 import { invoke } from "@tauri-apps/api/core";
 import type {
@@ -12,55 +14,71 @@ import type {
   ResultadoEjecucion,
 } from "../tipos/modelos";
 
+// TODO: quitar después del diagnóstico
+async function invocar<T>(
+  nombreComando: string,
+  args?: Record<string, unknown>,
+): Promise<T> {
+  console.log("[INVOKE] llamando a", nombreComando, args);
+  try {
+    const r = await invoke<T>(nombreComando, args);
+    console.log("[INVOKE] respuesta OK de", nombreComando, r);
+    return r;
+  } catch (e) {
+    console.error("[INVOKE] FALLO en", nombreComando, e);
+    throw e;
+  }
+}
+
 export function ejecutarPython(codigo: string): Promise<ResultadoEjecucion> {
-  return invoke<ResultadoEjecucion>("ejecutar_python", { codigo });
+  return invocar<ResultadoEjecucion>("ejecutar_python", { codigo });
 }
 
 export function detenerEjecucion(): Promise<void> {
-  return invoke<void>("detener_ejecucion");
+  return invocar<void>("detener_ejecucion");
 }
 
 export function obtenerPreferencias(): Promise<Preferencias> {
-  return invoke<Preferencias>("obtener_preferencias");
+  return invocar<Preferencias>("obtener_preferencias");
 }
 
 export function guardarPreferencias(
   preferencias: Preferencias,
 ): Promise<Preferencias> {
-  return invoke<Preferencias>("guardar_preferencias", { preferencias });
+  return invocar<Preferencias>("guardar_preferencias", { preferencias });
 }
 
 export function listarPerfiles(): Promise<Perfil[]> {
-  return invoke<Perfil[]>("listar_perfiles");
+  return invocar<Perfil[]>("listar_perfiles");
 }
 
 export function crearPerfil(nombre: string): Promise<Perfil> {
-  return invoke<Perfil>("crear_perfil", { nombre });
+  return invocar<Perfil>("crear_perfil", { nombre });
 }
 
 export function listarProyectos(perfilSlug: string): Promise<Proyecto[]> {
-  return invoke<Proyecto[]>("listar_proyectos", { perfilSlug });
+  return invocar<Proyecto[]>("listar_proyectos", { perfilSlug });
 }
 
 export function crearProyecto(
   perfilSlug: string,
   nombre: string,
 ): Promise<Proyecto> {
-  return invoke<Proyecto>("crear_proyecto", { perfilSlug, nombre });
+  return invocar<Proyecto>("crear_proyecto", { perfilSlug, nombre });
 }
 
 export function eliminarProyecto(
   perfilSlug: string,
   proyectoSlug: string,
 ): Promise<void> {
-  return invoke<void>("eliminar_proyecto", { perfilSlug, proyectoSlug });
+  return invocar<void>("eliminar_proyecto", { perfilSlug, proyectoSlug });
 }
 
 export function listarArchivos(
   perfilSlug: string,
   proyectoSlug: string,
 ): Promise<EntradaArbol[]> {
-  return invoke<EntradaArbol[]>("listar_archivos", {
+  return invocar<EntradaArbol[]>("listar_archivos", {
     perfilSlug,
     proyectoSlug,
   });
@@ -71,7 +89,7 @@ export function leerArchivo(
   proyectoSlug: string,
   rutaRelativa: string,
 ): Promise<string> {
-  return invoke<string>("leer_archivo", {
+  return invocar<string>("leer_archivo", {
     perfilSlug,
     proyectoSlug,
     rutaRelativa,
@@ -84,7 +102,7 @@ export function escribirArchivo(
   rutaRelativa: string,
   contenido: string,
 ): Promise<void> {
-  return invoke<void>("escribir_archivo", {
+  return invocar<void>("escribir_archivo", {
     perfilSlug,
     proyectoSlug,
     rutaRelativa,
@@ -97,7 +115,7 @@ export function crearArchivo(
   proyectoSlug: string,
   rutaRelativa: string,
 ): Promise<void> {
-  return invoke<void>("crear_archivo", {
+  return invocar<void>("crear_archivo", {
     perfilSlug,
     proyectoSlug,
     rutaRelativa,
@@ -109,7 +127,7 @@ export function crearCarpeta(
   proyectoSlug: string,
   rutaRelativa: string,
 ): Promise<void> {
-  return invoke<void>("crear_carpeta", {
+  return invocar<void>("crear_carpeta", {
     perfilSlug,
     proyectoSlug,
     rutaRelativa,
@@ -121,7 +139,7 @@ export function eliminarEntrada(
   proyectoSlug: string,
   rutaRelativa: string,
 ): Promise<void> {
-  return invoke<void>("eliminar_entrada", {
+  return invocar<void>("eliminar_entrada", {
     perfilSlug,
     proyectoSlug,
     rutaRelativa,
@@ -129,22 +147,22 @@ export function eliminarEntrada(
 }
 
 export function listarPaquetesInstalados(): Promise<PaqueteInfo[]> {
-  return invoke<PaqueteInfo[]>("listar_paquetes_instalados");
+  return invocar<PaqueteInfo[]>("listar_paquetes_instalados");
 }
 
 export function instalarPaquete(nombre: string): Promise<string> {
-  return invoke<string>("instalar_paquete", { nombre });
+  return invocar<string>("instalar_paquete", { nombre });
 }
 
 export function desinstalarPaquete(nombre: string): Promise<string> {
-  return invoke<string>("desinstalar_paquete", { nombre });
+  return invocar<string>("desinstalar_paquete", { nombre });
 }
 
 export function leerRequirements(
   perfilSlug: string,
   proyectoSlug: string,
 ): Promise<string[]> {
-  return invoke<string[]>("leer_requirements", { perfilSlug, proyectoSlug });
+  return invocar<string[]>("leer_requirements", { perfilSlug, proyectoSlug });
 }
 
 export function escribirRequirements(
@@ -152,7 +170,7 @@ export function escribirRequirements(
   proyectoSlug: string,
   paquetes: string[],
 ): Promise<void> {
-  return invoke<void>("escribir_requirements", {
+  return invocar<void>("escribir_requirements", {
     perfilSlug,
     proyectoSlug,
     paquetes,
@@ -163,5 +181,5 @@ export function sincronizarRequirements(
   perfilSlug: string,
   proyectoSlug: string,
 ): Promise<void> {
-  return invoke<void>("sincronizar_requirements", { perfilSlug, proyectoSlug });
+  return invocar<void>("sincronizar_requirements", { perfilSlug, proyectoSlug });
 }

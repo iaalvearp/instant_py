@@ -36,6 +36,9 @@ import { nombreBaseDeRequisito } from "../utilidades/paquetes";
 const TIEMPO_AUTOGUARDADO_MS = 500;
 
 export default function Editor() {
+  // TODO: quitar después del diagnóstico
+  console.log("[PANTALLA] Editor render");
+
   const { codigo, salida, estableceCodigo } = useCodigoStore();
   const {
     perfilActivo,
@@ -62,6 +65,12 @@ export default function Editor() {
   const [paquetesAbierto, setPaquetesAbierto] = useState(false);
   // Número de paquetes que faltan por instalar del requirements.txt (0 = sin aviso).
   const [sincronizacionPaquetes, setSincronizacionPaquetes] = useState(0);
+
+  // TODO: quitar después del diagnóstico
+  useEffect(() => {
+    console.log("[PANTALLA] Editor montado");
+    return () => console.log("[PANTALLA] Editor desmontado");
+  }, []);
 
   // Refs con el valor vivo para poder guardar desde fuera del render.
   const codigoRef = useRef(codigo);

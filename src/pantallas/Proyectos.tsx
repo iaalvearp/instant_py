@@ -25,6 +25,9 @@ import type { Proyecto } from "../tipos/modelos";
 import { fechaRelativa } from "../utilidades/formato";
 
 export default function Proyectos() {
+  // TODO: quitar después del diagnóstico
+  console.log("[PANTALLA] Proyectos render");
+
   const perfilActivo = useAppStore((s) => s.perfilActivo);
   const perfilActivoNombre = useAppStore((s) => s.perfilActivoNombre);
   const estableceProyectoActivo = useAppStore((s) => s.estableceProyectoActivo);
@@ -41,6 +44,12 @@ export default function Proyectos() {
   const [proyectoAEliminar, setProyectoAEliminar] = useState<Proyecto | null>(
     null,
   );
+
+  // TODO: quitar después del diagnóstico
+  useEffect(() => {
+    console.log("[PANTALLA] Proyectos montado");
+    return () => console.log("[PANTALLA] Proyectos desmontado");
+  }, []);
 
   const refrescaProyectos = useCallback(async () => {
     if (!perfilActivo) return;

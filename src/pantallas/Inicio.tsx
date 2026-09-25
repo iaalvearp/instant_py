@@ -10,6 +10,9 @@ import type { Perfil } from "../tipos/modelos";
 import { iniciales } from "../utilidades/formato";
 
 export default function Inicio() {
+  // TODO: quitar después del diagnóstico
+  console.log("[PANTALLA] Inicio render");
+
   const establecePerfilActivo = useAppStore((s) => s.establecePerfilActivo);
   const establecePerfilActivoNombre = useAppStore(
     (s) => s.establecePerfilActivoNombre,
@@ -21,12 +24,22 @@ export default function Inicio() {
   const [error, setError] = useState<string | null>(null);
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
 
+  // TODO: quitar después del diagnóstico
+  console.log("[INICIO] cargando:", cargando);
+
   async function refrescaPerfiles() {
+    // TODO: quitar después del diagnóstico
+    console.log("[INICIO] cargando perfiles…");
     setCargando(true);
     setError(null);
     try {
-      setPerfiles(await listarPerfiles());
+      const leidos = await listarPerfiles();
+      // TODO: quitar después del diagnóstico
+      console.log("[INICIO] perfiles cargados:", leidos.length);
+      setPerfiles(leidos);
     } catch (e) {
+      // TODO: quitar después del diagnóstico
+      console.error("[INICIO] error al cargar:", e);
       setError(String(e));
     } finally {
       setCargando(false);
@@ -35,6 +48,12 @@ export default function Inicio() {
 
   useEffect(() => {
     void refrescaPerfiles();
+  }, []);
+
+  // TODO: quitar después del diagnóstico
+  useEffect(() => {
+    console.log("[PANTALLA] Inicio montado");
+    return () => console.log("[PANTALLA] Inicio desmontado");
   }, []);
 
   async function creaPerfil(nombre: string) {
