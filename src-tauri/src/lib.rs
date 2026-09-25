@@ -10,6 +10,10 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
+// Instrumentador Python embebido en el binario: auto-loguea las expresiones a
+// nivel de módulo y marca los errores de sintaxis (ver recursos/instrumentador.py).
+const INSTRUMENTADOR: &str = include_str!("../../recursos/instrumentador.py");
+
 // Resultado de una ejecución, con salida (stdout/stderr) y cómo terminó.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -49,7 +53,8 @@ async fn ejecutar_python(
     };
 
     let mut hijo = Command::new(sistema_python())
-        .arg("-")
+        .arg("-c")
+        .arg(INSTRUMENTADOR)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -188,4 +193,106 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{INSTRUMENTADOR, sistema_python};
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    fn ejecutar_instrumentado(codigo: &str) -> (String, String, Option<i32>) {
+        let mut hijo = Command::new(sistema_python())
+            .arg("-c")
+            .arg(INSTRUMENTADOR)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("no se pudo lanzar python3");
+        hijo
+            .stdin
+            .take()
+            .expect("sin stdin en el proceso")
+            .write_all(codigo.as_bytes())
+            .expect("no se pudo escribir el código en el proceso");
+        let salida = hijo.wait_with_output().expect("no se pudo leer la salida");
+        (
+            String::from_utf8_lossy(&salida.stdout).into_owned(),
+            String::from_utf8_lossy(&salida.stderr).into_owned(),
+            salida.status.code(),
+        )
+    }
+
+    #[test]
+    fn autolog_de_artimetica_simple() {
+        let (stdout, _, codigo) = ejecutar_instrumentado("2 + 3\n");
+        assert_eq!(codigo, Some(0));
+        assert!(stdout.contains("__AUTOLOG__:1:5"));
+    }
+
+    #[test]
+    fn autolog_de_llamadas() {
+        let (stdout, _, _) = ejecutar_instrumentado("len([1,2,3])\n");
+        assert!(stdout.contains("__AUTOLOG__:1:3"));
+    }
+
+    #[test]
+    fn autolog_de_textos_con_repr() {
+        let (stdout, _, _) = ejecutar_instrumentado("\"texto\"\n");
+        assert!(stdout.contains("__AUTOLOG__:1:'texto'"));
+    }
+
+    #[test]
+    fn sin_autolog_en_asignaciones_imports_y_definiciones() {
+        let (stdout, _, _) =
+            ejecutar_instrumentado("x = 5\ndef f():\n    return 1\nimport math\n");
+        assert!(!stdout.contains("__AUTOLOG__"));
+    }
+
+    #[test]
+    fn print_normal_sin_estilo_de_autolog() {
+        let (stdout, _, _) = ejecutar_instrumentado("print(\"hola\")\n");
+        assert!(stdout.contains("hola"));
+        assert!(!stdout.contains("__AUTOLOG__"));
+    }
+
+    #[test]
+    fn docstring_del_modulo_no_se_imprime() {
+        let (stdout, _, codigo) = ejecutar_instrumentado("\"\"\"Hola\"\"\"\n");
+        assert_eq!(codigo, Some(0));
+        assert!(!stdout.contains("__AUTOLOG__"));
+        assert!(!stdout.contains("Hola"));
+    }
+
+    #[test]
+    fn autolog_en_if_for_y_while_a_nivel_de_modulo() {
+        let (stdout, _, _) = ejecutar_instrumentado("if True:\n    1 + 2\n");
+        assert!(stdout.contains("__AUTOLOG__:2:3"));
+        let (stdout, _, _) = ejecutar_instrumentado("for i in range(2):\n    i\n");
+        assert!(stdout.contains("__AUTOLOG__:2:0"));
+        assert!(stdout.contains("__AUTOLOG__:2:1"));
+        let (stdout, _, _) = ejecutar_instrumentado("contador = 0\nwhile contador < 1:\n    contador = contador + 1\n    contador\n");
+        assert!(stdout.contains("__AUTOLOG__:4:1"));
+    }
+
+    #[test]
+    fn sin_autolog_dentro_de_funciones_y_clases() {
+        let (stdout, _, _) = ejecutar_instrumentado(
+            "def f():\n    1 + 2\n    return 1\nclass A:\n    v = 1 + 2\nf()\n",
+        );
+        assert!(stdout.contains("__AUTOLOG__:6:1"));
+        assert!(!stdout.contains("__AUTOLOG__:2"));
+        assert!(!stdout.contains("__AUTOLOG__:5"));
+        let (stdout, _, _) = ejecutar_instrumentado("def f():\n    1 + 2\n");
+        assert!(!stdout.contains("__AUTOLOG__"));
+    }
+
+    #[test]
+    fn error_de_sintaxis_marcado_y_estado_de_salida_1() {
+        let (stdout, stderr, codigo) = ejecutar_instrumentado("1 +\n");
+        assert_eq!(stdout, "");
+        assert_eq!(codigo, Some(1));
+        assert!(stderr.starts_with("__SYNTAX_ERROR__:1:"));
+    }
 }

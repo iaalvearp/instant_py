@@ -11,6 +11,7 @@ import {
 import { useAppStore } from "./appStore";
 import { useCodigoStore } from "./codigoStore";
 import { useEjecucionStore } from "./ejecucionStore";
+import { extraeErrorSintaxis } from "../utilidades/salidaPython";
 
 const DEBOUNCE_AUTO_MS = 2000;
 const MENSAJE_TIMEOUT =
@@ -59,8 +60,16 @@ export function usarEjecucion() {
       } else {
         estableceSalida(resultado.salida);
         const correcto = resultado.codigoSalida === 0;
-        estableceIndicador(correcto ? "exito" : "error");
-        programarIndicadorInactivo(correcto ? 1000 : 2000);
+        if (correcto) {
+          estableceIndicador("exito");
+          programarIndicadorInactivo(1000);
+        } else if (extraeErrorSintaxis(resultado.salida) !== null) {
+          // Error de sintaxis mientras se escribe: se muestra en silencio.
+          estableceIndicador("inactivo");
+        } else {
+          estableceIndicador("error");
+          programarIndicadorInactivo(2000);
+        }
       }
     } catch (error) {
       if (id !== corridaIdRef.current) return;
