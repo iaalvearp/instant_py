@@ -1,6 +1,7 @@
 // Panel que muestra la salida (stdout/stderr) de la última ejecución. Las
 // líneas de auto-log de expresiones y los errores de sintaxis se distinguen
-// visualmente del print normal.
+// visualmente del print normal; el color ANSI de herramientas como rich se
+// respeta dentro de las líneas normales.
 import { parsearSalida, type EstiloSalida } from "../utilidades/salidaPython";
 
 interface PanelSalidaProps {
@@ -26,7 +27,14 @@ export default function PanelSalida({ salida }: PanelSalidaProps) {
         ) : (
           lineas.map((linea, indice) => (
             <span key={indice} className={estilosLinea[linea.estilo]}>
-              {linea.texto}
+              {linea.trozos.map((trozo, indiceTrozo) => (
+                <span
+                  key={indiceTrozo}
+                  style={trozo.color ? { color: trozo.color } : undefined}
+                >
+                  {trozo.texto}
+                </span>
+              ))}
               {"\n"}
             </span>
           ))

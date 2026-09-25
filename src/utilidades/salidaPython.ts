@@ -1,11 +1,15 @@
 // Interpreta la salida del instrumentador Python: separa el auto-log de las
-// expresiones del print normal y detecta los errores de sintaxis.
+// expresiones del print normal y detecta los errores de sintaxis. Las líneas
+// normales se dividen además en trozos de color (secuencias ANSI SGR) para
+// que herramientas como rich puedan pintar la salida.
 // Ver recursos/instrumentador.py para el protocolo de marcas.
+
+import { trozosAnsi, type TrozoSalida } from "./paquetes";
 
 export type EstiloSalida = "normal" | "autolog" | "sintaxis";
 
 export interface LineaSalida {
-  texto: string;
+  trozos: TrozoSalida[];
   estilo: EstiloSalida;
 }
 
@@ -34,17 +38,21 @@ export function parsearSalida(salida: string): LineaSalida[] {
   if (error) {
     return [
       {
-        texto: `SyntaxError en la línea ${error.linea}, columna ${error.columna}:`,
+        trozos: [
+          {
+            texto: `SyntaxError en la línea ${error.linea}, columna ${error.columna}:`,
+          },
+        ],
         estilo: "sintaxis",
       },
-      { texto: error.mensaje, estilo: "sintaxis" },
+      { trozos: [{ texto: error.mensaje }], estilo: "sintaxis" },
     ];
   }
   return salida.split("\n").map((linea) => {
     if (linea.startsWith(MARCA_AUTOLOG)) {
       const partes = linea.slice(MARCA_AUTOLOG.length).split(":");
-      return { texto: partes.slice(1).join(":"), estilo: "autolog" };
+      return { trozos: [{ texto: partes.slice(1).join(":") }], estilo: "autolog" };
     }
-    return { texto: linea, estilo: "normal" };
+    return { trozos: trozosAnsi(linea), estilo: "normal" };
   });
 }

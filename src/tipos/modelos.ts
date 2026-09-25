@@ -33,3 +33,8 @@ export interface ResultadoEjecucion {
 export interface Preferencias {
   ejecucionAutomatica: boolean;
 }
+
+export interface PaqueteInfo {
+  nombre: string;
+  version: string;
+}

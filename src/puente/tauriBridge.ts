@@ -5,6 +5,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   EntradaArbol,
+  PaqueteInfo,
   Perfil,
   Preferencias,
   Proyecto,
@@ -125,4 +126,42 @@ export function eliminarEntrada(
     proyectoSlug,
     rutaRelativa,
   });
+}
+
+export function listarPaquetesInstalados(): Promise<PaqueteInfo[]> {
+  return invoke<PaqueteInfo[]>("listar_paquetes_instalados");
+}
+
+export function instalarPaquete(nombre: string): Promise<string> {
+  return invoke<string>("instalar_paquete", { nombre });
+}
+
+export function desinstalarPaquete(nombre: string): Promise<string> {
+  return invoke<string>("desinstalar_paquete", { nombre });
+}
+
+export function leerRequirements(
+  perfilSlug: string,
+  proyectoSlug: string,
+): Promise<string[]> {
+  return invoke<string[]>("leer_requirements", { perfilSlug, proyectoSlug });
+}
+
+export function escribirRequirements(
+  perfilSlug: string,
+  proyectoSlug: string,
+  paquetes: string[],
+): Promise<void> {
+  return invoke<void>("escribir_requirements", {
+    perfilSlug,
+    proyectoSlug,
+    paquetes,
+  });
+}
+
+export function sincronizarRequirements(
+  perfilSlug: string,
+  proyectoSlug: string,
+): Promise<void> {
+  return invoke<void>("sincronizar_requirements", { perfilSlug, proyectoSlug });
 }

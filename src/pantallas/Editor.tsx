@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   FolderOpen,
+  Package,
   PanelLeftOpen,
   Play,
   Settings,
@@ -16,12 +17,21 @@ import BarraTareas from "../componentes/BarraTareas";
 import Boton from "../componentes/Boton";
 import EditorPython from "../componentes/EditorPython";
 import IndicadorEjecucion from "../componentes/IndicadorEjecucion";
+import IndicadorInstalacion from "../componentes/IndicadorInstalacion";
 import Interruptor from "../componentes/Interruptor";
+import PanelPaquetes from "../componentes/PanelPaquetes";
 import PanelSalida from "../componentes/PanelSalida";
 import { useAppStore } from "../estado/appStore";
 import { useCodigoStore } from "../estado/codigoStore";
 import { usarEjecucion } from "../estado/usarEjecucion";
-import { leerArchivo, escribirArchivo } from "../puente/tauriBridge";
+import {
+  escribirArchivo,
+  leerArchivo,
+  leerRequirements,
+  listarPaquetesInstalados,
+  sincronizarRequirements,
+} from "../puente/tauriBridge";
+import { nombreBaseDeRequisito } from "../utilidades/paquetes";
 
 const TIEMPO_AUTOGUARDADO_MS = 500;
 
@@ -49,6 +59,9 @@ export default function Editor() {
   const [linea, setLinea] = useState(1);
   const [columna, setColumna] = useState(1);
   const [estadoGuardado, setEstadoGuardado] = useState<EstadoGuardado>(null);
+  const [paquetesAbierto, setPaquetesAbierto] = useState(false);
+  // Número de paquetes que faltan por instalar del requirements.txt (0 = sin aviso).
+  const [sincronizacionPaquetes, setSincronizacionPaquetes] = useState(0);
 
   // Refs con el valor vivo para poder guardar desde fuera del render.
   const codigoRef = useRef(codigo);
@@ -151,6 +164,39 @@ export default function Editor() {
     };
   }, [perfilActivo, proyectoActivo]);
 
+  // Al abrir un proyecto se instalan automáticamente los paquetes del
+  // requirements.txt que falten en el entorno virtual compartido.
+  useEffect(() => {
+    if (!perfilActivo || !proyectoActivo) return;
+    let cancelado = false;
+    void (async () => {
+      try {
+        const [instalados, requisitos] = await Promise.all([
+          listarPaquetesInstalados(),
+          leerRequirements(perfilActivo, proyectoActivo),
+        ]);
+        const presentes = new Set(
+          instalados.map((p) => p.nombre.toLowerCase()),
+        );
+        const faltan = requisitos.filter(
+          (r) => !presentes.has(nombreBaseDeRequisito(r).toLowerCase()),
+        );
+        if (cancelado) return;
+        if (faltan.length > 0) {
+          setSincronizacionPaquetes(faltan.length);
+          await sincronizarRequirements(perfilActivo, proyectoActivo);
+        }
+      } catch {
+        // Sin entorno virtual o sin requisitos: se ignora en silencio.
+      } finally {
+        if (!cancelado) setSincronizacionPaquetes(0);
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [perfilActivo, proyectoActivo]);
+
   // Cambio real en el editor: se guarda en el store y se programa la
   // auto-ejecución si no es la carga programática de un archivo.
   function alCambiarCodigo(nuevo: string) {
@@ -197,6 +243,13 @@ export default function Editor() {
           <>
             <Boton
               variante="fantasma"
+              onClick={() => setPaquetesAbierto(true)}
+            >
+              <Package className="h-4 w-4" aria-hidden="true" />
+              Paquetes
+            </Boton>
+            <Boton
+              variante="fantasma"
               onClick={() => establecePantallaActual("proyectos")}
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -224,7 +277,7 @@ export default function Editor() {
         }
       />
 
-      <main className="flex min-h-0 flex-1">
+      <main className="relative flex min-h-0 flex-1 overflow-hidden">
         {arbolAbierto ? (
           <ArbolArchivos
             onAlterna={() => setArbolAbierto(false)}
@@ -258,6 +311,13 @@ export default function Editor() {
         <div className="w-72 min-w-72 border-l border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/30 lg:w-80">
           <PanelSalida salida={salida} />
         </div>
+
+        <PanelPaquetes
+          abierto={paquetesAbierto}
+          perfilSlug={perfilActivo}
+          proyectoSlug={proyectoActivo}
+          onCerrar={() => setPaquetesAbierto(false)}
+        />
       </main>
 
       <BarraEstado
@@ -267,6 +327,8 @@ export default function Editor() {
         columna={columna}
         estaEjecutando={estaEjecutando}
       />
+
+      <IndicadorInstalacion paquetes={sincronizacionPaquetes} />
     </div>
   );
 }
