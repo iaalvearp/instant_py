@@ -30,3 +30,10 @@ pub struct EntradaArbol {
     pub es_carpeta: bool,
     pub hijos: Vec<EntradaArbol>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PaqueteInfo {
+    pub nombre: String,
+    pub version: String,
+}

@@ -27,7 +27,7 @@ fn carpeta_de_perfil(app: &AppHandle, perfil_slug: &str) -> Result<PathBuf, Stri
     Ok(raiz_perfiles(app)?.join(perfil_slug))
 }
 
-fn carpeta_de_proyecto(
+pub(crate) fn carpeta_de_proyecto(
     app: &AppHandle,
     perfil_slug: &str,
     proyecto_slug: &str,

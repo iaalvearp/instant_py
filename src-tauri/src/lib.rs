@@ -1,4 +1,5 @@
 mod modelos;
+mod paquetes;
 mod preferencias;
 mod proyectos;
 mod seguridad;
@@ -40,9 +41,14 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 async fn ejecutar_python(
     codigo: String,
+    app: tauri::AppHandle,
     estado: tauri::State<'_, Ejecutor>,
 ) -> Result<ResultadoEjecucion, String> {
     use tokio::time::{sleep, Duration};
+
+    // Usa el intérprete del entorno virtual compartido, creándolo si hace falta.
+    paquetes::inicializar_venv(&app)?;
+    let python = paquetes::ruta_python_venv(&app)?;
 
     // Cancela la ejecución previa (si existe) y crea el nuevo token de cancelación.
     let receptor = {
@@ -52,7 +58,7 @@ async fn ejecutar_python(
         receptor
     };
 
-    let mut hijo = Command::new(sistema_python())
+    let mut hijo = Command::new(&python)
         .arg("-c")
         .arg(INSTRUMENTADOR)
         .stdin(Stdio::piped())
@@ -177,6 +183,13 @@ pub fn run() {
             greet,
             ejecutar_python,
             detener_ejecucion,
+            paquetes::inicializar_venv_compartido,
+            paquetes::listar_paquetes_instalados,
+            paquetes::instalar_paquete,
+            paquetes::desinstalar_paquete,
+            paquetes::leer_requirements,
+            paquetes::escribir_requirements,
+            paquetes::sincronizar_requirements,
             preferencias::obtener_preferencias,
             preferencias::guardar_preferencias,
             proyectos::listar_perfiles,
