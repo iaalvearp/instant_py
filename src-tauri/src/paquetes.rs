@@ -42,9 +42,12 @@ fn ruta_pip_venv(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 /// Crea el entorno virtual la primera vez que hace falta (idempotente).
+/// Comprueba que exista pip (no solo el ejecutable de Python) para que una
+/// creación a medias —por ejemplo interrumpida— se complete en la siguiente
+/// llamada en lugar de fallar al lanzar pip.
 pub fn inicializar_venv(app: &AppHandle) -> Result<(), String> {
-    let python = ruta_python_venv(app)?;
-    if python.exists() {
+    let pip = ruta_pip_venv(app)?;
+    if pip.exists() {
         return Ok(());
     }
     let venv = ruta_venv(app)?;
@@ -59,12 +62,19 @@ pub fn inicializar_venv(app: &AppHandle) -> Result<(), String> {
         .map_err(|e| format!("No se pudo crear el entorno virtual: {e}"))?;
     if !salida.status.success() {
         // Si otro proceso acaba de crear el venv, lo damos por listo.
-        if python.exists() {
+        if pip.exists() {
             return Ok(());
         }
         let detalle = String::from_utf8_lossy(&salida.stderr);
         return Err(format!(
             "No se pudo crear el entorno virtual:\n{}",
+            detalle.trim_end()
+        ));
+    }
+    if !pip.exists() {
+        let detalle = String::from_utf8_lossy(&salida.stderr);
+        return Err(format!(
+            "El entorno virtual se creó pero no quedó listo pip:\n{}",
             detalle.trim_end()
         ));
     }
@@ -203,11 +213,13 @@ pub fn inicializar_venv_compartido(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn listar_paquetes_instalados(app: AppHandle) -> Result<Vec<PaqueteInfo>, String> {
+    inicializar_venv(&app)?;
     listar_paquetes_instalados_interno(&app).await
 }
 
 #[tauri::command]
 pub async fn instalar_paquete(app: AppHandle, nombre: String) -> Result<String, String> {
+    inicializar_venv(&app)?;
     if !validar_nombre_paquete(&nombre) {
         return Err(format!("Nombre de paquete inválido: {nombre}"));
     }
@@ -216,6 +228,7 @@ pub async fn instalar_paquete(app: AppHandle, nombre: String) -> Result<String, 
 
 #[tauri::command]
 pub async fn desinstalar_paquete(app: AppHandle, nombre: String) -> Result<String, String> {
+    inicializar_venv(&app)?;
     if !validar_nombre_paquete(&nombre) {
         return Err(format!("Nombre de paquete inválido: {nombre}"));
     }
@@ -250,6 +263,7 @@ pub async fn sincronizar_requirements(
     perfil_slug: String,
     proyecto_slug: String,
 ) -> Result<(), String> {
+    inicializar_venv(&app)?;
     let ruta = ruta_requirements(&app, &perfil_slug, &proyecto_slug)?;
     let requisitos = leer_requirements_desde(&ruta)?;
     let instalados = listar_paquetes_instalados_interno(&app).await?;
