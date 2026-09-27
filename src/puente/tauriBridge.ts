@@ -1,10 +1,6 @@
 // Puente entre la interfaz (src/) y el backend de Tauri (src-tauri/).
 // Toda comunicación con Rust pasa por aquí usando invoke(). Los argumentos
 // snake_case de Rust se envían aquí en camelCase.
-//
-// TODO: quitar después del diagnóstico: cada llamada se loguea en consola y
-// en la terminal de `pnpm tauri dev` (excepto log_al_terminal, que se ignora
-// para no entrar en bucle).
 
 import { invoke } from "@tauri-apps/api/core";
 import type {
@@ -16,50 +12,18 @@ import type {
   ResultadoEjecucion,
 } from "../tipos/modelos";
 
-// TODO: quitar después del diagnóstico
+// En desarrollo se loguea en consola solo cuando una llamada falla.
 async function invocar<T>(
   nombreComando: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  const esLogAlTerminal = nombreComando === "log_al_terminal";
-  if (!esLogAlTerminal) {
-    console.log("[INVOKE] llamando a", nombreComando, args);
-    void logAlTerminal(
-      "log",
-      `[INVOKE] llamando a ${nombreComando} ${JSON.stringify(args)}`,
-    );
-  }
   try {
-    const r = await invoke<T>(nombreComando, args);
-    if (!esLogAlTerminal) {
-      console.log("[INVOKE] respuesta OK de", nombreComando, r);
-      void logAlTerminal(
-        "log",
-        `[INVOKE] respuesta OK de ${nombreComando} ${JSON.stringify(r)}`,
-      );
-    }
-    return r;
+    return await invoke<T>(nombreComando, args);
   } catch (e) {
-    if (!esLogAlTerminal) {
+    if (import.meta.env.DEV) {
       console.error("[INVOKE] FALLO en", nombreComando, e);
-      void logAlTerminal(
-        "error",
-        `[INVOKE] FALLO en ${nombreComando} ${String(e)}`,
-      );
     }
     throw e;
-  }
-}
-
-// TODO: quitar después del diagnóstico
-export async function logAlTerminal(
-  nivel: "log" | "warn" | "error",
-  mensaje: string,
-): Promise<void> {
-  try {
-    await invocar("log_al_terminal", { nivel, mensaje });
-  } catch {
-    // Silencio si Tauri no está disponible (p. ej. navegador en dev).
   }
 }
 

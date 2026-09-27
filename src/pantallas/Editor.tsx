@@ -32,14 +32,10 @@ import {
   sincronizarRequirements,
 } from "../puente/tauriBridge";
 import { nombreBaseDeRequisito } from "../utilidades/paquetes";
-import { log } from "../utilidades/diagnostico";
 
 const TIEMPO_AUTOGUARDADO_MS = 500;
 
 export default function Editor() {
-  // TODO: quitar después del diagnóstico
-  log("[PANTALLA] Editor render");
-
   const { codigo, salida, estableceCodigo } = useCodigoStore();
   const {
     perfilActivo,
@@ -66,12 +62,6 @@ export default function Editor() {
   const [paquetesAbierto, setPaquetesAbierto] = useState(false);
   // Número de paquetes que faltan por instalar del requirements.txt (0 = sin aviso).
   const [sincronizacionPaquetes, setSincronizacionPaquetes] = useState(0);
-
-  // TODO: quitar después del diagnóstico
-  useEffect(() => {
-    log("[PANTALLA] Editor montado");
-    return () => log("[PANTALLA] Editor desmontado");
-  }, []);
 
   // Refs con el valor vivo para poder guardar desde fuera del render.
   const codigoRef = useRef(codigo);
@@ -229,11 +219,7 @@ export default function Editor() {
   }
 
   return (
-    // TODO: quitar bordes de debug
-    <div
-      className="flex h-screen flex-col"
-      style={{ outline: "2px dashed lime", minHeight: "200px" }}
-    >
+    <div className="flex h-screen flex-col">
       <BarraTareas
         izquierda={
           <>

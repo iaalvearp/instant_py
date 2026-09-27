@@ -23,8 +23,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* TODO: reactivar tras diagnóstico de pantalla en blanco */
-/* @keyframes fundido {
+@keyframes fundido {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -33,16 +32,14 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-} */
+}
 
-/* TODO: reactivar tras diagnóstico de pantalla en blanco */
-/* .animar-entrada {
+.animar-entrada {
   animation: fundido 0.18s ease-out;
-} */
+}
 
-/* TODO: reactivar tras diagnóstico de pantalla en blanco */
-/* @media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   .animar-entrada {
     animation: none;
   }
-} */
+}

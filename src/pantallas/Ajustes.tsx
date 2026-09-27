@@ -1,26 +1,15 @@
 // Pantalla de ajustes. Placeholder: llegará con la configuración real.
-import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import BarraTareas from "../componentes/BarraTareas";
 import Boton from "../componentes/Boton";
 import { useAppStore } from "../estado/appStore";
-import { log } from "../utilidades/diagnostico";
 
 export default function Ajustes() {
-  // TODO: quitar después del diagnóstico
-  log("[PANTALLA] Ajustes render");
-
   const {
     perfilActivo,
     proyectoActivo,
     establecePantallaActual,
   } = useAppStore();
-
-  // TODO: quitar después del diagnóstico
-  useEffect(() => {
-    log("[PANTALLA] Ajustes montado");
-    return () => log("[PANTALLA] Ajustes desmontado");
-  }, []);
 
   function volver() {
     if (proyectoActivo) {
@@ -33,11 +22,7 @@ export default function Ajustes() {
   }
 
   return (
-    // TODO: quitar bordes de debug
-    <div
-      className="flex h-screen flex-col"
-      style={{ outline: "2px dashed lime", minHeight: "200px" }}
-    >
+    <div className="flex h-screen flex-col">
       <BarraTareas
         izquierda={<h1 className="text-base font-semibold">Ajustes</h1>}
         derecha={

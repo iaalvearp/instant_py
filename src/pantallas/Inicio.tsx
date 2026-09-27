@@ -8,12 +8,8 @@ import { useAppStore } from "../estado/appStore";
 import { crearPerfil, listarPerfiles } from "../puente/tauriBridge";
 import type { Perfil } from "../tipos/modelos";
 import { iniciales } from "../utilidades/formato";
-import { log, logError } from "../utilidades/diagnostico";
 
 export default function Inicio() {
-  // TODO: quitar después del diagnóstico
-  log("[PANTALLA] Inicio render");
-
   const establecePerfilActivo = useAppStore((s) => s.establecePerfilActivo);
   const establecePerfilActivoNombre = useAppStore(
     (s) => s.establecePerfilActivoNombre,
@@ -25,22 +21,14 @@ export default function Inicio() {
   const [error, setError] = useState<string | null>(null);
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
 
-  // TODO: quitar después del diagnóstico
-  log("[INICIO] cargando:", cargando);
-
   async function refrescaPerfiles() {
-    // TODO: quitar después del diagnóstico
-    log("[INICIO] cargando perfiles…");
     setCargando(true);
     setError(null);
     try {
       const leidos = await listarPerfiles();
-      // TODO: quitar después del diagnóstico
-      log("[INICIO] perfiles cargados:", leidos.length);
       setPerfiles(leidos);
     } catch (e) {
-      // TODO: quitar después del diagnóstico
-      logError("[INICIO] error al cargar:", e);
+      console.error("[INICIO] error al cargar perfiles:", e);
       setError(String(e));
     } finally {
       setCargando(false);
@@ -49,12 +37,6 @@ export default function Inicio() {
 
   useEffect(() => {
     void refrescaPerfiles();
-  }, []);
-
-  // TODO: quitar después del diagnóstico
-  useEffect(() => {
-    log("[PANTALLA] Inicio montado");
-    return () => log("[PANTALLA] Inicio desmontado");
   }, []);
 
   async function creaPerfil(nombre: string) {
@@ -72,11 +54,7 @@ export default function Inicio() {
   }
 
   return (
-    // TODO: quitar bordes de debug
-    <main
-      className="flex min-h-full flex-col items-center justify-center gap-10 px-6 py-16"
-      style={{ outline: "2px dashed lime", minHeight: "200px" }}
-    >
+    <main className="flex min-h-full flex-col items-center justify-center gap-10 px-6 py-16">
       <div className="text-center">
         <h1 className="text-5xl font-bold tracking-tight">instant_py</h1>
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">
